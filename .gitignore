@@ -1,0 +1,47 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Dependency directories
+vendor/
+
+# Go workspace file
+go.work
+
+# Environment files
+.env
+.env.local
+
+# Docker
+.docker/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+logs/
+
+# Build artifacts
+/dist/
+/build/
+/bin/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node.js (для frontend)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
