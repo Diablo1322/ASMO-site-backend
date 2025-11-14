@@ -12,7 +12,7 @@ type DB struct {
 	*sql.DB
 }
 
-func NewPostgresDB(connectionString string) (*DB, error) {
+func NewPostgresDB(connectionString string) (*sql.DB, error) {
 	db, err := sql.Open("postgres", connectionString)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)
@@ -23,7 +23,7 @@ func NewPostgresDB(connectionString string) (*DB, error) {
 	}
 
 	log.Println("Successfully connected to PostgreSQL database")
-	return &DB{db}, nil
+	return db, nil
 }
 
 func (db *DB) Close() error {

@@ -1,9 +1,17 @@
 @echo off
+echo ========================================
+echo    ASMO Backend - Stopping Services
+echo ========================================
+
 echo Stopping Docker containers...
 docker-compose down
 
-echo Cleaning up...
+echo Cleaning up unused Docker resources...
 docker system prune -f
 
-echo Project stopped successfully!
+echo.
+echo ========================================
+echo    Services stopped successfully!
+echo ========================================
+echo.
 pause

@@ -23,14 +23,14 @@ func LoggingMiddleware(logger *logger.Logger) gin.HandlerFunc {
 		start := time.Now()
 		requestID := generateRequestID()
 
-		// Create logger with request ID
+		// Создаём logger с request ID
 		requestLogger := logger.WithRequestID(requestID)
 
-		// Set request ID and logger in context
+		// Устанавливаем request ID и logger в контекст
 		c.Set("requestID", requestID)
 		c.Set("logger", requestLogger)
 
-		// Log request
+		// Log запрос
 		requestLogger.Info("Request started", map[string]interface{}{
 			"method":      c.Request.Method,
 			"path":        c.Request.URL.Path,
@@ -38,10 +38,10 @@ func LoggingMiddleware(logger *logger.Logger) gin.HandlerFunc {
 			"user_agent":  c.Request.UserAgent(),
 		})
 
-		// Process request
+		// Процесс запроса
 		c.Next()
 
-		// Log response
+		// Log ответ
 		duration := time.Since(start)
 		requestLogger.Info("Request completed", map[string]interface{}{
 			"method":      c.Request.Method,

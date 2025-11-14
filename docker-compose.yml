@@ -9,7 +9,6 @@ services:
       - "80:80"
     depends_on:
       - backend
-      - frontend
     networks:
       - app-network
 
@@ -20,38 +19,28 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - DATABASE_URL=postgres://user:password@postgres:5432/mydb
+      - DATABASE_URL=postgres://user:password@postgres:5432/asmo_db
       - PORT=8080
-      - FRONTEND_URL=http://host.docker.internal:3000
+      - FRONTEND_URL=http://localhost:3000
       - LOG_LEVEL=INFO
     depends_on:
       - postgres
     networks:
       - app-network
-    volumes:
-      - ./backend:/app
-    command: ["./main"]
-
-  frontend:
-    image: node:18-alpine
-    working_dir: /app
-    ports:
-      - "3000:3000"
-    environment:
-      - NEXT_PUBLIC_API_URL=http://host.docker.internal/api
-    volumes:
-      - ../frontend:/app
     command: >
-      sh -c "npm install && npm run dev"
-    networks:
-      - app-network
-    depends_on:
-      - backend
+      sh -c "
+        echo 'Waiting for database...' &&
+        until pg_isready -h postgres -p 5432; do sleep 2; done &&
+        echo 'Running migrations...' &&
+        ./migrate up &&
+        echo 'Starting server...' &&
+        ./main
+      "
 
   postgres:
     image: postgres:15-alpine
     environment:
-      - POSTGRES_DB=mydb
+      - POSTGRES_DB=asmo_db
       - POSTGRES_USER=user
       - POSTGRES_PASSWORD=password
     ports:
@@ -60,6 +49,11 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d asmo_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres_data:

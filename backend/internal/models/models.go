@@ -4,24 +4,37 @@ import (
 	"time"
 )
 
-type Item struct {
-	ID        int       `json:"id" db:"id"`
-	Name      string    `json:"name" db:"name" validate:"required,min=1,max=100"`
-	Email     string    `json:"email,omitempty" db:"email" validate:"omitempty,email"`
-	CreatedAt time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
+type WebProjects struct {
+	ID          int       `json:"id" db:"id"`
+	Name        string    `json:"name" db:"name" validate:"required,min=15,max=100"`
+	Description string    `json:"description" db:"description" validate:"required,min=20,max=1500"`
+	Img         string    `json:"img" db:"img" validate:"reuired,url"`
+	Price       float64   `json:"price" db:"price" validate:"required,min=0"`
+	TimeDevelop int       `json:"time_develop" db:"time_develop" validate:"required,min=1,max=1825"`
+	CreatedAt   time.Time `json:"created_at" db:"created_at"`
+	UpdateAt    time.Time `json:"update_at" db:"update_at"`
 }
 
-type User struct {
-	ID       int    `json:"id" db:"id"`
-	Username string `json:"username" db:"username" validate:"required,username"`
-	Password string `json:"password,omitempty" db:"password" validate:"required,strong_password"`
-	Email    string `json:"email" db:"email" validate:"required,email"`
+type MobileProjects struct {
+	ID          int       `json:"id" db:"id"`
+	Name        string    `json:"name" db:"name" validate:"required,min=15,max=100"`
+	Description string    `json:"description" db:"description" validate:"required,min=20,max=1500"`
+	Img         string    `json:"img" db:"img" validate:"reuired,url"`
+	Price       float64   `json:"price" db:"price" validate:"required,min=0"`
+	TimeDevelop int       `json:"time_develop" db:"time_develop" validate:"required,min=1,max=1825"`
+	CreatedAt   time.Time `json:"created_at" db:"created_at"`
+	UpdateAt    time.Time `json:"update_at" db:"update_at"`
 }
 
-type CreateItemRequest struct {
-	Name  string `json:"name" validate:"required,min=1,max=100"`
-	Email string `json:"email" validate:"omitempty,email"`
+type BotsProjects struct {
+	ID          int       `json:"id" db:"id"`
+	Name        string    `json:"name" db:"name" validate:"required,min=15,max=100"`
+	Description string    `json:"description" db:"description" validate:"required,min=20,max=1500"`
+	Img         string    `json:"img" db:"img" validate:"reuired,url"`
+	Price       float64   `json:"price" db:"price" validate:"required,min=0"`
+	TimeDevelop int       `json:"time_develop" db:"time_develop" validate:"required,min=1,max=1825"`
+	CreatedAt   time.Time `json:"created_at" db:"created_at"`
+	UpdateAt    time.Time `json:"update_at" db:"update_at"`
 }
 
 type HealthResponse struct {
@@ -29,4 +42,32 @@ type HealthResponse struct {
 	Message   string                 `json:"message"`
 	Timestamp map[string]interface{} `json:"timestamp"`
 	Database  string                 `json:"database,omitempty"`
+}
+
+type CreateWebProjectRequest struct {
+	Name string `json:"name" validate:"required,min=15,max=100"`
+	Description string `json:"description" validate:"required,min=20,max=1500"`
+	Img string `json:"img" validate:"required,url"`
+	Price float64 `json:"price" validate:"required,min=0"`
+	TimeDevelop int `json:"time_develop" validate:"required,min=1,max=1825"`
+}
+
+type CreateMobileProjectRequest struct {
+	Name string `json:"name" validate:"required,min=15,max=100"`
+	Description string `json:"description" validate:"required,min=20,max=1500"`
+	Img string `json:"img" validate:"required,url"`
+	Price float64 `json:"price" validate:"required,min=0"`
+	TimeDevelop int `json:"time_develop" validate:"required,min=1,max=1825"`
+}
+
+type CreateBotsProjectRequest struct {
+	Name string `json:"name" validate:"required,min=15,max=100"`
+	Description string `json:"description" validate:"required,min=20,max=1500"`
+	Img string `json:"img" validate:"required,url"`
+	Price float64 `json:"price" validate:"required,min=0"`
+	TimeDevelop int `json:"time_develop" validate:"required,min=1,max=1825"`
+}
+
+type GetProjectRequest struct {
+    ID int `json:"id" uri:"id" validate:"required,min=1"`
 }

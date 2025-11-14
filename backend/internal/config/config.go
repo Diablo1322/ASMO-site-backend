@@ -20,7 +20,7 @@ func Load() *Config {
 	}
 }
 
-// getEnv gets environment variable or returns default value
+// getEnv возвращает константы из окружения или возвращает стандартные константы окружения
 func getEnv(key, defaultValue string) string {
 	if value := os.Getenv(key); value != "" {
 		return value
