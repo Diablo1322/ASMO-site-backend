@@ -7,46 +7,62 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"ASMO-site-backend/internal/database"
 	"ASMO-site-backend/internal/handlers"
 	"ASMO-site-backend/internal/models"
 	"ASMO-site-backend/pkg/logger"
+	testutils "ASMO-site-backend/tests"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 )
 
-func setupTestRouter() *gin.Engine {	
-	// Use test database
-	testDBURL := "postgres://user:password@localhost:5433/asmo_test_db"
-	
-	db, err := database.NewPostgresDB(testDBURL)
+func setupTestRouter() *gin.Engine {
+	// Используем testutils для настройки базы данных
+	db, err := testutils.SetupTestDB()
 	if err != nil {
-		panic("Failed to connect to test database")
+		panic("Failed to setup test database: " + err.Error())
 	}
 
 	logger := logger.New("test", logger.INFO)
 	handler := handlers.NewHandler(db, logger)
 
 	router := gin.Default()
-	
+
+	// Отключаем перенаправление trailing slashes для тестов
+	router.RedirectTrailingSlash = false
+
+	// CORS middleware for tests
+	router.Use(func(c *gin.Context) {
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE")
+
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
+
+		c.Next()
+	})
+
 	// Test routes
 	api := router.Group("/api")
 	{
 		api.GET("/health", handler.HealthCheck)
-		
+
 		web := api.Group("/WebApplications")
 		{
 			web.GET("/:id", handler.GetWebProject)
 			web.POST("/", handler.CreateWebProject)
 		}
-		
+
 		mobile := api.Group("/MobileApplications")
 		{
 			mobile.GET("/:id", handler.GetMobileProject)
 			mobile.POST("/", handler.CreateMobileProject)
 		}
-		
+
 		bots := api.Group("/Bots")
 		{
 			bots.GET("/:id", handler.GetBotProject)

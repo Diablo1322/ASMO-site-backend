@@ -15,14 +15,28 @@ if "%1"=="" (
     echo   make.bat migrate-down - Rollback migrations
     echo   make.bat build       - Build application
     echo   make.bat run         - Run application locally
+    echo   make.bat debug-migrations - Debug migrations path
+    echo   make.bat debug-test-db - Debug test database
     echo.
     exit /b 0
+)
+
+if "%1"=="debug-migrations" (
+    echo Debugging migrations path...
+    go run -v ./tests/testutils/debug_migrations.go
+)
+
+if "%1"=="debug-test-db" (
+    echo Debugging test database...
+    cd ..
+    call debug-test-db.bat
+    cd backend
 )
 
 if "%1"=="test" (
     echo Running all tests...
     docker-compose -f ../docker-compose.test.yml up -d
-    timeout /t 5 /nobreak > nul
+    timeout /t 10 /nobreak > nul
     go test -v ./tests/...
     docker-compose -f ../docker-compose.test.yml down
 ) else if "%1"=="test-unit" (
@@ -31,7 +45,7 @@ if "%1"=="test" (
 ) else if "%1"=="test-integration" (
     echo Running integration tests...
     docker-compose -f ../docker-compose.test.yml up -d
-    timeout /t 5 /nobreak > nul
+    timeout /t 10 /nobreak > nul
     go test -v ./tests/integration/...
     docker-compose -f ../docker-compose.test.yml down
 ) else if "%1"=="migrate-up" (

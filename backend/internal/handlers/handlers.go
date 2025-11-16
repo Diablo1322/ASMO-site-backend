@@ -69,7 +69,7 @@ func (h *Handler) GetWebProject(c *gin.Context) {
 
 	var project models.WebProjects
 	err := h.db.QueryRow(`
-		SELECT id, name, description, img, price, time_develop, created_at, update_at 
+		SELECT id, name, description, img, price, time_develop, created_at, update_at
 		FROM web_projects WHERE id = $1
 	`, req.ID).Scan(
 		&project.ID, &project.Name, &project.Description, &project.Img,
@@ -163,7 +163,7 @@ func (h *Handler) GetMobileProject(c *gin.Context) {
 
 	var project models.MobileProjects
 	err := h.db.QueryRow(`
-		SELECT id, name, description, img, price, time_develop, created_at, update_at 
+		SELECT id, name, description, img, price, time_develop, created_at, update_at
 		FROM mobile_projects WHERE id = $1
 	`, req.ID).Scan(
 		&project.ID, &project.Name, &project.Description, &project.Img,
@@ -257,7 +257,7 @@ func (h *Handler) GetBotProject(c *gin.Context) {
 
 	var project models.BotsProjects
 	err := h.db.QueryRow(`
-		SELECT id, name, description, img, price, time_develop, created_at, update_at 
+		SELECT id, name, description, img, price, time_develop, created_at, update_at
 		FROM bots_projects WHERE id = $1
 	`, req.ID).Scan(
 		&project.ID, &project.Name, &project.Description, &project.Img,

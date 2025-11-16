@@ -1,0 +1,90 @@
+version: '3.8'
+
+services:
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile.prod
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - backend
+    networks:
+      - app-network
+    volumes:
+      - ./nginx/nginx.prod.conf:/etc/nginx/conf.d/nginx.conf:ro
+      - ./ssl:/etc/ssl/certs:ro
+      - ./ssl:/etc/ssl/private:ro
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=postgres://user:password@postgres:5432/asmo_db?sslmode=disable
+      - PORT=8080
+      - LOG_LEVEL=INFO
+      - GIN_MODE=release
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app-network
+    restart: unless-stopped
+    command: >
+      sh -c "
+        echo 'Running migrations...' &&
+        ./migrate up &&
+        echo 'Starting production server...' &&
+        ./main
+      "
+
+  # frontend:  # Закомментировано - фронтенда нет
+  #   build:
+  #     context: ../frontend
+  #     dockerfile: Dockerfile.prod
+  #   environment:
+  #     - NEXT_PUBLIC_API_URL=https://domain.com/api
+  #   networks:
+  #     - app-network
+  #   restart: unless-stopped
+  #   depends_on:
+  #     - backend
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=asmo_db
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d asmo_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@asmo.com
+      - PGADMIN_DEFAULT_PASSWORD=admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    networks:
+      - app-network
+
+volumes:
+  postgres_data:
+
+networks:
+  app-network:
+    driver: bridge

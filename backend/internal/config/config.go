@@ -7,20 +7,28 @@ import (
 type Config struct {
 	Port        string
 	DatabaseURL string
-	FrontendURL string
 	LogLevel    string
+	Environment string
 }
 
 func Load() *Config {
+	environment := getEnv("ENVIRONMENT", "production")
+
 	return &Config{
 		Port:        getEnv("PORT", "8080"),
-		DatabaseURL: getEnv("DATABASE_URL", "postgres://user:password@postgres:5432/asmo_db?sslmode=disable"),
-		FrontendURL: getEnv("FRONTEND_URL", "http://localhost:3000"),
-		LogLevel:    getEnv("LOG_LEVEL", "INFO"),
+		DatabaseURL: getEnv("DATABASE_URL", "postgres://user:password@localhost:5432/asmo_db?sslmode=disable"),
+		LogLevel:    getEnv("LOG_LEVEL", getDefaultLogLevel(environment)),
+		Environment: environment,
 	}
 }
 
-// getEnv возвращает константы из окружения или возвращает стандартные константы окружения
+func getDefaultLogLevel(environment string) string {
+	if environment == "production" {
+		return "INFO"
+	}
+	return "DEBUG"
+}
+
 func getEnv(key, defaultValue string) string {
 	if value := os.Getenv(key); value != "" {
 		return value
