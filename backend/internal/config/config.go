@@ -14,7 +14,7 @@ type Config struct {
 func Load() *Config {
 	return &Config{
 		Port:        getEnv("PORT", "8080"),
-		DatabaseURL: getEnv("DATABASE_URL", "postgres://user:password@localhost:5432/ASMO-site-backenddb"),
+		DatabaseURL: getEnv("DATABASE_URL", "postgres://user:password@postgres:5432/asmo_db?sslmode=disable"),
 		FrontendURL: getEnv("FRONTEND_URL", "http://localhost:3000"),
 		LogLevel:    getEnv("LOG_LEVEL", "INFO"),
 	}
