@@ -48,6 +48,167 @@ func (h *Handler) HealthCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
+// GetFrontendProjects returns all projects for frontend
+func (h *Handler) GetFrontendProjects(c *gin.Context) {
+	// Получаем все проекты из всех категорий
+	var allProjects []interface{}
+
+	// Web Projects
+	rows, err := h.db.Query(`
+		SELECT id, name, description, img, price, time_develop, created_at, update_at
+		FROM web_projects
+	`)
+	if err != nil {
+		h.logger.Error("Failed to fetch web projects", map[string]interface{}{
+			"error": err.Error(),
+		})
+	} else {
+		defer rows.Close()
+		for rows.Next() {
+			var project models.WebProjects
+			if err := rows.Scan(
+				&project.ID, &project.Name, &project.Description, &project.Img,
+				&project.Price, &project.TimeDevelop, &project.CreatedAt, &project.UpdateAt,
+			); err == nil {
+				allProjects = append(allProjects, map[string]interface{}{
+					"type":    "web",
+					"project": project,
+				})
+			}
+		}
+	}
+
+	// Mobile Projects
+	rows, err = h.db.Query(`
+		SELECT id, name, description, img, price, time_develop, created_at, update_at
+		FROM mobile_projects
+	`)
+	if err != nil {
+		h.logger.Error("Failed to fetch mobile projects", map[string]interface{}{
+			"error": err.Error(),
+		})
+	} else {
+		defer rows.Close()
+		for rows.Next() {
+			var project models.MobileProjects
+			if err := rows.Scan(
+				&project.ID, &project.Name, &project.Description, &project.Img,
+				&project.Price, &project.TimeDevelop, &project.CreatedAt, &project.UpdateAt,
+			); err == nil {
+				allProjects = append(allProjects, map[string]interface{}{
+					"type":    "mobile",
+					"project": project,
+				})
+			}
+		}
+	}
+
+	// Bot Projects
+	rows, err = h.db.Query(`
+		SELECT id, name, description, img, price, time_develop, created_at, update_at
+		FROM bots_projects
+	`)
+	if err != nil {
+		h.logger.Error("Failed to fetch bot projects", map[string]interface{}{
+			"error": err.Error(),
+		})
+	} else {
+		defer rows.Close()
+		for rows.Next() {
+			var project models.BotsProjects
+			if err := rows.Scan(
+				&project.ID, &project.Name, &project.Description, &project.Img,
+				&project.Price, &project.TimeDevelop, &project.CreatedAt, &project.UpdateAt,
+			); err == nil {
+				allProjects = append(allProjects, map[string]interface{}{
+					"type":    "bot",
+					"project": project,
+				})
+			}
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data": gin.H{
+			"projects": allProjects,
+			"total":    len(allProjects),
+		},
+	})
+}
+
+// GetFrontendProjectsByType returns projects by type for frontend
+func (h *Handler) GetFrontendProjectsByType(c *gin.Context) {
+	projectType := c.Param("type")
+
+	var query string
+	switch projectType {
+	case "web":
+		query = "SELECT id, name, description, img, price, time_develop, created_at, update_at FROM web_projects"
+	case "mobile":
+		query = "SELECT id, name, description, img, price, time_develop, created_at, update_at FROM mobile_projects"
+	case "bots":
+		query = "SELECT id, name, description, img, price, time_develop, created_at, update_at FROM bots_projects"
+	default:
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid project type. Use: web, mobile, or bots",
+		})
+		return
+	}
+
+	rows, err := h.db.Query(query)
+	if err != nil {
+		h.logger.Error("Failed to fetch projects", map[string]interface{}{
+			"error": err.Error(),
+			"type":  projectType,
+		})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to fetch projects",
+		})
+		return
+	}
+	defer rows.Close()
+
+	var projects []interface{}
+	for rows.Next() {
+		switch projectType {
+		case "web":
+			var project models.WebProjects
+			if err := rows.Scan(
+				&project.ID, &project.Name, &project.Description, &project.Img,
+				&project.Price, &project.TimeDevelop, &project.CreatedAt, &project.UpdateAt,
+			); err == nil {
+				projects = append(projects, project)
+			}
+		case "mobile":
+			var project models.MobileProjects
+			if err := rows.Scan(
+				&project.ID, &project.Name, &project.Description, &project.Img,
+				&project.Price, &project.TimeDevelop, &project.CreatedAt, &project.UpdateAt,
+			); err == nil {
+				projects = append(projects, project)
+			}
+		case "bots":
+			var project models.BotsProjects
+			if err := rows.Scan(
+				&project.ID, &project.Name, &project.Description, &project.Img,
+				&project.Price, &project.TimeDevelop, &project.CreatedAt, &project.UpdateAt,
+			); err == nil {
+				projects = append(projects, project)
+			}
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data": gin.H{
+			"projects": projects,
+			"total":    len(projects),
+			"type":     projectType,
+		},
+	})
+}
+
 // Web Applications Handlers
 func (h *Handler) GetWebProject(c *gin.Context) {
 	var req models.GetProjectRequest
