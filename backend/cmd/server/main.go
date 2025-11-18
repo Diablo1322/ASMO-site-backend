@@ -2,9 +2,6 @@ package main
 
 import (
 	"log"
-	"net/http"
-	"net/http/httputil"
-	"net/url"
 
 	"ASMO-site-backend/internal/config"
 	"ASMO-site-backend/internal/database"
@@ -16,28 +13,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// ReverseProxy создает прокси к фронтенду
-func ReverseProxy(target string) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		remote, err := url.Parse(target)
-		if err != nil {
-			c.JSON(500, gin.H{"error": "Frontend server error"})
-			return
-		}
-
-		proxy := httputil.NewSingleHostReverseProxy(remote)
-		proxy.Director = func(req *http.Request) {
-			req.Header = c.Request.Header.Clone()
-			req.Host = remote.Host
-			req.URL.Scheme = remote.Scheme
-			req.URL.Host = remote.Host
-			req.URL.Path = c.Request.URL.Path
-		}
-
-		proxy.ServeHTTP(c.Writer, c.Request)
-	}
-}
-
 func main() {
 	// Load configuration
 	cfg := config.Load()
@@ -45,8 +20,8 @@ func main() {
 	// Initialize logger
 	appLogger := logger.New("backend", logger.INFO)
 	appLogger.Info("Application starting", map[string]interface{}{
-		"port":        "3000",
-		"environment": "production",
+		"port":        cfg.Port,
+		"environment": "production", // Меняем на production
 	})
 
 	// Initialize database
@@ -71,7 +46,7 @@ func main() {
 	// Middleware
 	router.Use(middleware.LoggingMiddleware(appLogger))
 
-	// CORS middleware
+	// CORS middleware - разрешаем HTTPS origins
 	router.Use(func(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
@@ -88,10 +63,12 @@ func main() {
 
 	// Security middleware
 	router.Use(func(c *gin.Context) {
+		// Set security headers
 		c.Header("X-Content-Type-Options", "nosniff")
 		c.Header("X-Frame-Options", "DENY")
 		c.Header("X-XSS-Protection", "1; mode=block")
 
+		// Если запрос пришел через HTTPS
 		if c.Request.TLS != nil || c.GetHeader("X-Forwarded-Proto") == "https" {
 			c.Header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
 		}
@@ -100,14 +77,10 @@ func main() {
 	// Initialize handlers
 	handler := handlers.NewHandler(db, appLogger)
 
-	// API Routes
+	// Routes
 	api := router.Group("/api")
 	{
 		api.GET("/health", handler.HealthCheck)
-
-		// Frontend API routes
-		api.GET("/projects", handler.GetFrontendProjects)
-		api.GET("/projects/:type", handler.GetFrontendProjectsByType)
 
 		// Web Applications routes
 		web := api.Group("/WebApplications")
@@ -131,14 +104,32 @@ func main() {
 		}
 	}
 
-	// Frontend proxy - все остальные запросы на фронтенд
-	frontendURL := "http://localhost:3001" // фронтенд на 3001
-	router.NoRoute(ReverseProxy(frontendURL))
+	// Root endpoint
+	router.GET("/", func(c *gin.Context) {
+		scheme := "http"
+		if c.Request.TLS != nil || c.GetHeader("X-Forwarded-Proto") == "https" {
+			scheme = "https"
+		}
 
-	// Start server on port 3000
-	appLogger.Info("Server starting on port 3000", map[string]interface{}{
-		"port": "3000",
+		baseURL := scheme + "://" + c.Request.Host
+
+		c.JSON(200, gin.H{
+			"message": "ASMO Backend API",
+			"version": "1.0.0",
+			"secure":  scheme == "https",
+			"endpoints": []string{
+				"GET " + baseURL + "/api/health",
+				"GET/POST " + baseURL + "/api/WebApplications",
+				"GET/POST " + baseURL + "/api/MobileApplications",
+				"GET/POST " + baseURL + "/api/Bots",
+			},
+		})
+	})
+
+	// Start server
+	appLogger.Info("Server starting", map[string]interface{}{
+		"port": cfg.Port,
 		"mode": gin.Mode(),
 	})
-	log.Fatal(router.Run(":3000"))
+	log.Fatal(router.Run(":" + cfg.Port))
 }

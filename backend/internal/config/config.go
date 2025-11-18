@@ -15,7 +15,7 @@ func Load() *Config {
 	environment := getEnv("ENVIRONMENT", "production")
 
 	return &Config{
-		Port:        getEnv("PORT", "8080"),
+		Port:        getEnv("PORT", "3000"),
 		DatabaseURL: getEnv("DATABASE_URL", "postgres://user:password@localhost:5432/asmo_db?sslmode=disable"),
 		LogLevel:    getEnv("LOG_LEVEL", getDefaultLogLevel(environment)),
 		Environment: environment,
