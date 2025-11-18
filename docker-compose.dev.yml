@@ -19,10 +19,10 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     ports:
-      - "8080:8080"
+      - "3000:3000"
     environment:
       - DATABASE_URL=postgres://user:password@postgres:5432/asmo_db?sslmode=disable
-      - PORT=8080
+      - PORT=3000
       - LOG_LEVEL=DEBUG
       - GIN_MODE=debug
     depends_on:
@@ -45,7 +45,7 @@ services:
   #   image: node:18-alpine
   #   working_dir: /app
   #   ports:
-  #     - "3000:3000"
+  #     - "3001:3001"
   #   environment:
   #     - NEXT_PUBLIC_API_URL=http://localhost/api
   #   volumes:

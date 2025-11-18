@@ -24,7 +24,7 @@ services:
       dockerfile: Dockerfile
     environment:
       - DATABASE_URL=postgres://user:password@postgres:5432/asmo_db?sslmode=disable
-      - PORT=8080
+      - PORT=3000
       - LOG_LEVEL=INFO
       - GIN_MODE=release
     depends_on:

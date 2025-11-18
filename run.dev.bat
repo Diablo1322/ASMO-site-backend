@@ -23,7 +23,7 @@ echo ========================================
 echo    Development services started!
 echo ========================================
 echo API: http://localhost/api/health
-echo Direct backend: http://localhost:8080/api/health
+echo Direct backend: http://localhost:3000/api/health
 echo PostgreSQL: localhost:5432
 echo.
 echo Mode: Development (HTTP)
