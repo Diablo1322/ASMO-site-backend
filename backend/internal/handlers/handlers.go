@@ -49,6 +49,64 @@ func (h *Handler) HealthCheck(c *gin.Context) {
 }
 
 // Web Applications Handlers
+
+// GetWebProjects - получение всех веб-проектов
+func (h *Handler) GetWebProjects(c *gin.Context) {
+	rows, err := h.db.Query(`
+		SELECT id, name, description, img, price, time_develop, created_at, update_at
+		FROM web_projects
+		ORDER BY created_at DESC
+	`)
+	if err != nil {
+		h.logger.Error("Failed to fetch web projects", map[string]interface{}{
+			"error": err.Error(),
+		})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to fetch web projects",
+		})
+		return
+	}
+	defer rows.Close()
+
+	var projects []models.WebProjects
+	for rows.Next() {
+		var project models.WebProjects
+		err := rows.Scan(
+			&project.ID, &project.Name, &project.Description, &project.Img,
+			&project.Price, &project.TimeDevelop, &project.CreatedAt, &project.UpdateAt,
+		)
+		if err != nil {
+			h.logger.Error("Failed to scan web project", map[string]interface{}{
+				"error": err.Error(),
+			})
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Failed to process web projects",
+			})
+			return
+		}
+		projects = append(projects, project)
+	}
+
+	if err = rows.Err(); err != nil {
+		h.logger.Error("Error iterating web projects", map[string]interface{}{
+			"error": err.Error(),
+		})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to process web projects",
+		})
+		return
+	}
+
+	if len(projects) == 0 {
+		projects = []models.WebProjects{} // Возвращаем пустой массив вместо null
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"projects": projects,
+		"count":    len(projects),
+	})
+}
+
 func (h *Handler) GetWebProject(c *gin.Context) {
 	var req models.GetProjectRequest
 	if err := c.ShouldBindUri(&req); err != nil {
@@ -143,6 +201,64 @@ func (h *Handler) CreateWebProject(c *gin.Context) {
 }
 
 // Mobile Applications Handlers
+
+// GetMobileProjects - получение всех мобильных проектов
+func (h *Handler) GetMobileProjects(c *gin.Context) {
+	rows, err := h.db.Query(`
+		SELECT id, name, description, img, price, time_develop, created_at, update_at
+		FROM mobile_projects
+		ORDER BY created_at DESC
+	`)
+	if err != nil {
+		h.logger.Error("Failed to fetch mobile projects", map[string]interface{}{
+			"error": err.Error(),
+		})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to fetch mobile projects",
+		})
+		return
+	}
+	defer rows.Close()
+
+	var projects []models.MobileProjects
+	for rows.Next() {
+		var project models.MobileProjects
+		err := rows.Scan(
+			&project.ID, &project.Name, &project.Description, &project.Img,
+			&project.Price, &project.TimeDevelop, &project.CreatedAt, &project.UpdateAt,
+		)
+		if err != nil {
+			h.logger.Error("Failed to scan mobile project", map[string]interface{}{
+				"error": err.Error(),
+			})
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Failed to process mobile projects",
+			})
+			return
+		}
+		projects = append(projects, project)
+	}
+
+	if err = rows.Err(); err != nil {
+		h.logger.Error("Error iterating mobile projects", map[string]interface{}{
+			"error": err.Error(),
+		})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to process mobile projects",
+		})
+		return
+	}
+
+	if len(projects) == 0 {
+		projects = []models.MobileProjects{} // Возвращаем пустой массив вместо null
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"projects": projects,
+		"count":    len(projects),
+	})
+}
+
 func (h *Handler) GetMobileProject(c *gin.Context) {
 	var req models.GetProjectRequest
 	if err := c.ShouldBindUri(&req); err != nil {
@@ -237,6 +353,64 @@ func (h *Handler) CreateMobileProject(c *gin.Context) {
 }
 
 // Bots Handlers
+
+// GetBotProjects - получение всех бот-проектов
+func (h *Handler) GetBotProjects(c *gin.Context) {
+	rows, err := h.db.Query(`
+		SELECT id, name, description, img, price, time_develop, created_at, update_at
+		FROM bots_projects
+		ORDER BY created_at DESC
+	`)
+	if err != nil {
+		h.logger.Error("Failed to fetch bot projects", map[string]interface{}{
+			"error": err.Error(),
+		})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to fetch bot projects",
+		})
+		return
+	}
+	defer rows.Close()
+
+	var projects []models.BotsProjects
+	for rows.Next() {
+		var project models.BotsProjects
+		err := rows.Scan(
+			&project.ID, &project.Name, &project.Description, &project.Img,
+			&project.Price, &project.TimeDevelop, &project.CreatedAt, &project.UpdateAt,
+		)
+		if err != nil {
+			h.logger.Error("Failed to scan bot project", map[string]interface{}{
+				"error": err.Error(),
+			})
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Failed to process bot projects",
+			})
+			return
+		}
+		projects = append(projects, project)
+	}
+
+	if err = rows.Err(); err != nil {
+		h.logger.Error("Error iterating bot projects", map[string]interface{}{
+			"error": err.Error(),
+		})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to process bot projects",
+		})
+		return
+	}
+
+	if len(projects) == 0 {
+		projects = []models.BotsProjects{} // Возвращаем пустой массив вместо null
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"projects": projects,
+		"count":    len(projects),
+	})
+}
+
 func (h *Handler) GetBotProject(c *gin.Context) {
 	var req models.GetProjectRequest
 	if err := c.ShouldBindUri(&req); err != nil {

@@ -6,10 +6,10 @@ import (
 	"ASMO-site-backend/internal/config"
 	"ASMO-site-backend/internal/database"
 	"ASMO-site-backend/internal/handlers"
-	"ASMO-site-backend/internal/middleware"
 	"ASMO-site-backend/internal/validation"
 	"ASMO-site-backend/pkg/logger"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -21,7 +21,7 @@ func main() {
 	appLogger := logger.New("backend", logger.INFO)
 	appLogger.Info("Application starting", map[string]interface{}{
 		"port":        cfg.Port,
-		"environment": "production", // Меняем на production
+		"environment": "development",
 	})
 
 	// Initialize database
@@ -40,96 +40,67 @@ func main() {
 	// Initialize router
 	router := gin.Default()
 
-	// Trusted proxies for production
-	router.SetTrustedProxies([]string{"nginx", "172.0.0.0/8"})
+	// Настройка CORS
+	router.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:3001", "http://127.0.0.1:3001", "http://localhost:3001/portgolio/", "http://127.0.0.1:3001/portfolio/"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Length", "Content-Type", "Authorization", "Accept", "X-Requested-With"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * 60 * 60, // 12 hours
+	}))
 
-	// Middleware
-	router.Use(middleware.LoggingMiddleware(appLogger))
-
-	// CORS middleware - разрешаем HTTPS origins
-	router.Use(func(c *gin.Context) {
-		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
-		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE")
-
-		if c.Request.Method == "OPTIONS" {
-			c.AbortWithStatus(204)
-			return
-		}
-
-		c.Next()
-	})
-
-	// Security middleware
-	router.Use(func(c *gin.Context) {
-		// Set security headers
-		c.Header("X-Content-Type-Options", "nosniff")
-		c.Header("X-Frame-Options", "DENY")
-		c.Header("X-XSS-Protection", "1; mode=block")
-
-		// Если запрос пришел через HTTPS
-		if c.Request.TLS != nil || c.GetHeader("X-Forwarded-Proto") == "https" {
-			c.Header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
-		}
-	})
+	// ИЛИ более простая настройка CORS:
+	// router.Use(cors.Default())
 
 	// Initialize handlers
 	handler := handlers.NewHandler(db, appLogger)
 
-	// Routes
-	api := router.Group("/api")
+	// Fix favicon
+	router.GET("/favicon.ico", func(c *gin.Context) {
+		c.Status(204)
+	})
+
+	// Health check
+	router.GET("/api/health", handler.HealthCheck)
+
+	// Web Applications routes
+	web := router.Group("/api/WebApplications")
 	{
-		api.GET("/health", handler.HealthCheck)
+		web.GET("/:id", handler.GetWebProject)
+		web.GET("/", handler.GetWebProjects)
+		web.POST("/", handler.CreateWebProject)
+	}
 
-		// Web Applications routes
-		web := api.Group("/WebApplications")
-		{
-			web.GET("/:id", handler.GetWebProject)
-			web.POST("/", handler.CreateWebProject)
-		}
+	// Mobile Applications routes
+	mobile := router.Group("/api/MobileApplications")
+	{
+		mobile.GET("/:id", handler.GetMobileProject)
+		mobile.GET("/", handler.GetMobileProjects)
+		mobile.POST("/", handler.CreateMobileProject)
+	}
 
-		// Mobile Applications routes
-		mobile := api.Group("/MobileApplications")
-		{
-			mobile.GET("/:id", handler.GetMobileProject)
-			mobile.POST("/", handler.CreateMobileProject)
-		}
-
-		// Bots routes
-		bots := api.Group("/Bots")
-		{
-			bots.GET("/:id", handler.GetBotProject)
-			bots.POST("/", handler.CreateBotProject)
-		}
+	// Bots routes
+	bots := router.Group("/api/Bots")
+	{
+		bots.GET("/:id", handler.GetBotProject)
+		bots.GET("/", handler.GetBotProjects)
+		bots.POST("/", handler.CreateBotProject)
 	}
 
 	// Root endpoint
 	router.GET("/", func(c *gin.Context) {
-		scheme := "http"
-		if c.Request.TLS != nil || c.GetHeader("X-Forwarded-Proto") == "https" {
-			scheme = "https"
-		}
-
-		baseURL := scheme + "://" + c.Request.Host
-
 		c.JSON(200, gin.H{
 			"message": "ASMO Backend API",
 			"version": "1.0.0",
-			"secure":  scheme == "https",
-			"endpoints": []string{
-				"GET " + baseURL + "/api/health",
-				"GET/POST " + baseURL + "/api/WebApplications",
-				"GET/POST " + baseURL + "/api/MobileApplications",
-				"GET/POST " + baseURL + "/api/Bots",
-			},
+			"cors":    "enabled for ALL paths on localhost:3001 and 127.0.0.1:3001",
 		})
 	})
 
 	// Start server
 	appLogger.Info("Server starting", map[string]interface{}{
 		"port": cfg.Port,
-		"mode": gin.Mode(),
 	})
+	log.Printf("Server running on http://localhost:%s", cfg.Port)
 	log.Fatal(router.Run(":" + cfg.Port))
 }
