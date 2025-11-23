@@ -503,3 +503,155 @@ func (h *Handler) CreateBotProject(c *gin.Context) {
 		"id":      id,
 	})
 }
+
+
+// GetStaff - получение всех сотрудников
+func (h *Handler) GetStaff(c *gin.Context) {
+	rows, err := h.db.Query(`
+		SELECT id, name, description, img, role, created_at, update_at
+		FROM staff
+		ORDER BY created_at DESC
+	`)
+	if err != nil {
+		h.logger.Error("Failed to fetch staff", map[string]interface{}{
+			"error": err.Error(),
+		})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to fetch staff",
+		})
+		return
+	}
+	defer rows.Close()
+
+	var staff []models.Staff
+	for rows.Next() {
+		var member models.Staff
+		err := rows.Scan(
+			&member.ID, &member.Name, &member.Description, &member.Img,
+			&member.Role, &member.CreatedAt, &member.UpdateAt,
+		)
+		if err != nil {
+			h.logger.Error("Failed to scan staff member", map[string]interface{}{
+				"error": err.Error(),
+			})
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Failed to process staff",
+			})
+			return
+		}
+		staff = append(staff, member)
+	}
+
+	if err = rows.Err(); err != nil {
+		h.logger.Error("Error iterating staff", map[string]interface{}{
+			"error": err.Error(),
+		})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to process staff",
+		})
+		return
+	}
+
+	if len(staff) == 0 {
+		staff = []models.Staff{} // Возвращаем пустой массив вместо null
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"staff": staff,
+		"count": len(staff),
+	})
+}
+
+func (h *Handler) GetStaffMember(c *gin.Context) {
+	var req models.GetProjectRequest
+	if err := c.ShouldBindUri(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid staff ID",
+		})
+		return
+	}
+
+	// Validate request
+	if errs := validation.ValidateStruct(req); errs != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Validation failed",
+			"details": errs,
+		})
+		return
+	}
+
+	var member models.Staff
+	err := h.db.QueryRow(`
+		SELECT id, name, description, img, role, created_at, update_at
+		FROM staff WHERE id = $1
+	`, req.ID).Scan(
+		&member.ID, &member.Name, &member.Description, &member.Img,
+		&member.Role, &member.CreatedAt, &member.UpdateAt,
+	)
+
+	if err == sql.ErrNoRows {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "Staff member not found",
+		})
+		return
+	} else if err != nil {
+		h.logger.Error("Failed to fetch staff member", map[string]interface{}{
+			"error": err.Error(),
+			"id":    req.ID,
+		})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to fetch staff member",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, member)
+}
+
+func (h *Handler) CreateStaff(c *gin.Context) {
+	var req models.CreateStaffRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid request body",
+		})
+		return
+	}
+
+	// Validate request
+	if errs := validation.ValidateStruct(req); errs != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Validation failed",
+			"details": errs,
+		})
+		return
+	}
+
+	var id int
+	err := h.db.QueryRow(`
+		INSERT INTO staff (name, description, img, role, created_at, update_at)
+		VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		RETURNING id
+	`, req.Name, req.Description, req.Img, req.Role).Scan(&id)
+
+	if err != nil {
+		h.logger.Error("Failed to create staff member", map[string]interface{}{
+			"error": err.Error(),
+			"data":  req,
+		})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to create staff member",
+		})
+		return
+	}
+
+	h.logger.Info("Staff member created successfully", map[string]interface{}{
+		"id":   id,
+		"name": req.Name,
+		"role": req.Role,
+	})
+
+	c.JSON(http.StatusCreated, gin.H{
+		"message": "Staff member created successfully",
+		"id":      id,
+	})
+}

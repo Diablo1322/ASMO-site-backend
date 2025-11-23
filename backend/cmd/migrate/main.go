@@ -17,7 +17,7 @@ func main() {
 
 	// Создание миграций
 	m, err := migrate.New(
-		"file://migrations",
+		"file://../../migrations",
 		cfg.DatabaseURL,
 	)
 	if err != nil {

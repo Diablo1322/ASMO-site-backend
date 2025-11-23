@@ -68,6 +68,13 @@ func setupTestRouter() *gin.Engine {
 			bots.GET("/:id", handler.GetBotProject)
 			bots.POST("/", handler.CreateBotProject)
 		}
+
+		staff := api.Group("/Staff")
+		{
+			staff.GET("/:id", handler.GetStaffMember)
+			staff.GET("/", handler.GetStaff)
+			staff.POST("/", handler.CreateStaff)
+		}
 	}
 
 	return router
@@ -152,6 +159,59 @@ func TestCreateBotProject(t *testing.T) {
 	assert.Equal(t, http.StatusCreated, w.Code)
 }
 
+func TestCreateStaff(t *testing.T) {
+	router := setupTestRouter()
+
+	staff := models.CreateStaffRequest{
+		Name:        "Test Staff Member Full Name",
+		Description: "This is a comprehensive test description for a staff member that meets the minimum length requirements and provides detailed information about their role and responsibilities.",
+		Img:         "https://example.com/staff.jpg",
+		Role:        "Senior Developer",
+	}
+
+	body, _ := json.Marshal(staff)
+	req := httptest.NewRequest("POST", "/api/Staff", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusCreated, w.Code)
+}
+
+func TestGetStaff(t *testing.T) {
+	router := setupTestRouter()
+
+	// First create a staff member
+	staff := models.CreateStaffRequest{
+		Name:        "Test Staff Member For Get",
+		Description: "This is a test description for staff member retrieval testing purposes.",
+		Img:         "https://example.com/staff-get.jpg",
+		Role:        "Test Developer",
+	}
+
+	body, _ := json.Marshal(staff)
+	req := httptest.NewRequest("POST", "/api/Staff", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusCreated, w.Code)
+
+	// Now get all staff
+	req = httptest.NewRequest("GET", "/api/Staff", nil)
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.Contains(t, response, "staff")
+	assert.Contains(t, response, "count")
+}
+
 func TestGetNonExistentProject(t *testing.T) {
 	router := setupTestRouter()
 
@@ -159,6 +219,15 @@ func TestGetNonExistentProject(t *testing.T) {
 	w := httptest.NewRecorder()
 
 	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
 
+func TestGetNonExistentStaff(t *testing.T) {
+	router := setupTestRouter()
+
+	req := httptest.NewRequest("GET", "/api/Staff/999", nil)
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusNotFound, w.Code)
 }

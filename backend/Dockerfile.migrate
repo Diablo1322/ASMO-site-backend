@@ -21,5 +21,7 @@ WORKDIR /root/
 # Copy the pre-built binary file from the previous stage
 COPY --from=builder /app/migrate .
 
+COPY --from=builder /app/migrations ./migrations/
+
 # Command to run migrations
 CMD ["./migrate", "up"]

@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"strings"
 
 	"ASMO-site-backend/internal/config"
 	"ASMO-site-backend/internal/database"
@@ -17,11 +18,19 @@ func main() {
 	// Load configuration
 	cfg := config.Load()
 
+	// Set Gin mode based on environment
+	if cfg.Environment == "production" {
+		gin.SetMode(gin.ReleaseMode)
+	} else {
+		gin.SetMode(gin.DebugMode)
+	}
+
 	// Initialize logger
 	appLogger := logger.New("backend", logger.INFO)
 	appLogger.Info("Application starting", map[string]interface{}{
 		"port":        cfg.Port,
-		"environment": "development",
+		"environment": cfg.Environment,
+		"gin_mode":    gin.Mode(),
 	})
 
 	// Initialize database
@@ -40,18 +49,22 @@ func main() {
 	// Initialize router
 	router := gin.Default()
 
-	// Настройка CORS
+	// CORS configuration for Next.js frontend on port 3001
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3001", "http://127.0.0.1:3001", "http://localhost:3001/portgolio/", "http://127.0.0.1:3001/portfolio/"},
+		AllowOriginFunc: func(origin string) bool {
+			// Разрешаем все локальные адреса на порту 3001 (Next.js)
+			return strings.Contains(origin, "://localhost:3001") ||
+				strings.Contains(origin, "://127.0.0.1:3001") ||
+				strings.Contains(origin, "://0.0.0.0:3001") ||
+				// Для продакшна - добавьте ваши домены здесь
+				strings.Contains(origin, "://your-production-domain.com")
+		},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Length", "Content-Type", "Authorization", "Accept", "X-Requested-With"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
 		MaxAge:           12 * 60 * 60, // 12 hours
 	}))
-
-	// ИЛИ более простая настройка CORS:
-	// router.Use(cors.Default())
 
 	// Initialize handlers
 	handler := handlers.NewHandler(db, appLogger)
@@ -88,19 +101,43 @@ func main() {
 		bots.POST("/", handler.CreateBotProject)
 	}
 
+	staff := router.Group("/api/Staff")
+	{
+		staff.GET("/:id", handler.GetStaffMember)
+		staff.GET("/", handler.GetStaff)
+		staff.POST("/", handler.CreateStaff)
+	}
+
+	// Development-only debug endpoint
+	if cfg.Environment == "development" {
+		router.GET("/api/debug", func(c *gin.Context) {
+			c.JSON(200, gin.H{
+				"mode":        "development",
+				"frontend":    "Next.js on :3001",
+				"cors":        "enabled for localhost:3001",
+				"environment": cfg.Environment,
+			})
+		})
+	}
+
 	// Root endpoint
 	router.GET("/", func(c *gin.Context) {
 		c.JSON(200, gin.H{
-			"message": "ASMO Backend API",
-			"version": "1.0.0",
-			"cors":    "enabled for ALL paths on localhost:3001 and 127.0.0.1:3001",
+			"message":     "ASMO Backend API",
+			"version":     "1.0.0",
+			"environment": cfg.Environment,
+			"frontend":    "Next.js on port 3001",
+			"cors":        "configured for localhost:3001",
 		})
 	})
 
 	// Start server
 	appLogger.Info("Server starting", map[string]interface{}{
-		"port": cfg.Port,
+		"port":        cfg.Port,
+		"environment": cfg.Environment,
+		"frontend":    "Next.js :3001",
 	})
-	log.Printf("Server running on http://localhost:%s", cfg.Port)
+	log.Printf("🚀 Server running in %s mode on http://localhost:%s", cfg.Environment, cfg.Port)
+	log.Printf("📡 Frontend (Next.js) should connect from http://localhost:3001")
 	log.Fatal(router.Run(":" + cfg.Port))
 }

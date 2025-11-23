@@ -50,6 +50,17 @@ echo ); >> backend\migrations\003_create_bots_projects_table.up.sql
 
 echo DROP TABLE IF EXISTS bots_projects; > backend\migrations\003_create_bots_projects_table.down.sql
 
+echo CREATE TABLE staff ( > backend\migrations\004_create_staff_table.up.sql
+echo     id SERIAL PRIMARY KEY, >> backend\migrations\004_create_staff_table.up.sql
+echo     name VARCHAR(100) NOR NULL, >> backend\migrations\004_create_staff_table.up.sql
+echo     description TEXT NOT NULL, >> backend\migrations\004_create_staff_table.up.sql
+echo     role VARCHAR(50) NOT NULL, >> backend\migrations\004_create_staff_table.up.sql
+echo     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, >> backend\migrations\004_create_staff_table.up.sql
+echo     update_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, >> bakcend\migrations\004_create_staff_table.up.sql
+echo ); >> bakcend\migrations\004_create_staff_table.up.sql
+
+echo DROP TABLE IF EXISTS staff; > backend\migrations\004_create_staff_table.down.sql
+
 echo.
 echo ✅ Migration files created successfully!
 echo Location: backend\migrations\
