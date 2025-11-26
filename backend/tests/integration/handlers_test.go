@@ -10,7 +10,7 @@ import (
 	"ASMO-site-backend/internal/handlers"
 	"ASMO-site-backend/internal/models"
 	"ASMO-site-backend/pkg/logger"
-	testutils "ASMO-site-backend/tests"
+	testutils "ASMO-site-backend/tests/testutils"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -23,13 +23,16 @@ func setupTestRouter() *gin.Engine {
 		panic("Failed to setup test database: " + err.Error())
 	}
 
-	logger := logger.New("test", logger.INFO)
-	handler := handlers.NewHandler(db, logger)
+	logger.New("test", logger.INFO)
+
+	// Инициализируем раздельные хэндлеры
+	healthHandler := handlers.NewHealthHandlerWithLogger(db, logger.New("test", logger.INFO))
+	webHandler := handlers.NewWebProjectsHandler(db)
+	mobileHandler := handlers.NewMobileProjectsHandler(db)
+	botHandler := handlers.NewBotProjectsHandler(db)
+	staffHandler := handlers.NewStaffHandler(db)
 
 	router := gin.Default()
-
-	// Отключаем перенаправление trailing slashes для тестов
-	router.RedirectTrailingSlash = false
 
 	// CORS middleware for tests
 	router.Use(func(c *gin.Context) {
@@ -49,31 +52,31 @@ func setupTestRouter() *gin.Engine {
 	// Test routes
 	api := router.Group("/api")
 	{
-		api.GET("/health", handler.HealthCheck)
+		api.GET("/health", healthHandler.HealthCheck)
 
 		web := api.Group("/WebApplications")
 		{
-			web.GET("/:id", handler.GetWebProject)
-			web.POST("/", handler.CreateWebProject)
+			web.GET("/:id", webHandler.GetWebProject)
+			web.POST("/", webHandler.CreateWebProject)
 		}
 
 		mobile := api.Group("/MobileApplications")
 		{
-			mobile.GET("/:id", handler.GetMobileProject)
-			mobile.POST("/", handler.CreateMobileProject)
+			mobile.GET("/:id", mobileHandler.GetMobileProject)
+			mobile.POST("/", mobileHandler.CreateMobileProject)
 		}
 
 		bots := api.Group("/Bots")
 		{
-			bots.GET("/:id", handler.GetBotProject)
-			bots.POST("/", handler.CreateBotProject)
+			bots.GET("/:id", botHandler.GetBotProject)
+			bots.POST("/", botHandler.CreateBotProject)
 		}
 
 		staff := api.Group("/Staff")
 		{
-			staff.GET("/:id", handler.GetStaffMember)
-			staff.GET("/", handler.GetStaff)
-			staff.POST("/", handler.CreateStaff)
+			staff.GET("/:id", staffHandler.GetStaffMember)
+			staff.GET("/", staffHandler.GetStaff)
+			staff.POST("/", staffHandler.CreateStaff)
 		}
 	}
 
@@ -94,6 +97,10 @@ func TestHealthCheck(t *testing.T) {
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(t, err)
 	assert.Equal(t, "ok", response.Status)
+	assert.Equal(t, "1.0.0", response.Version) // ✅ Теперь поле есть в модели
+	assert.Contains(t, response.Timestamp, "server")
+	assert.Contains(t, response.Timestamp, "unix")
+	assert.Contains(t, response.Timestamp, "iso")
 }
 
 func TestCreateWebProject(t *testing.T) {
@@ -115,6 +122,13 @@ func TestCreateWebProject(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusCreated, w.Code)
+
+	// Проверяем ответ
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.Equal(t, "Web project created successfully", response["message"])
+	assert.NotNil(t, response["id"])
 }
 
 func TestCreateMobileProject(t *testing.T) {
@@ -136,6 +150,12 @@ func TestCreateMobileProject(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusCreated, w.Code)
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.Equal(t, "Mobile project created successfully", response["message"])
+	assert.NotNil(t, response["id"])
 }
 
 func TestCreateBotProject(t *testing.T) {
@@ -157,6 +177,12 @@ func TestCreateBotProject(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusCreated, w.Code)
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.Equal(t, "Bot project created successfully", response["message"])
+	assert.NotNil(t, response["id"])
 }
 
 func TestCreateStaff(t *testing.T) {
@@ -177,6 +203,12 @@ func TestCreateStaff(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusCreated, w.Code)
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.Equal(t, "Staff member created successfully", response["message"])
+	assert.NotNil(t, response["id"])
 }
 
 func TestGetStaff(t *testing.T) {
@@ -210,6 +242,9 @@ func TestGetStaff(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Contains(t, response, "staff")
 	assert.Contains(t, response, "count")
+
+	staffList := response["staff"].([]interface{})
+	assert.Greater(t, len(staffList), 0)
 }
 
 func TestGetNonExistentProject(t *testing.T) {
@@ -220,6 +255,11 @@ func TestGetNonExistentProject(t *testing.T) {
 
 	router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusNotFound, w.Code)
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.Equal(t, "Web project not found", response["error"])
 }
 
 func TestGetNonExistentStaff(t *testing.T) {
@@ -230,4 +270,35 @@ func TestGetNonExistentStaff(t *testing.T) {
 
 	router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusNotFound, w.Code)
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.Equal(t, "Staff member not found", response["error"])
+}
+
+func TestHealthCheckDatabaseStatus(t *testing.T) {
+	router := setupTestRouter()
+
+	req := httptest.NewRequest("GET", "/api/health", nil)
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response models.HealthResponse
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+
+	// Проверяем все поля HealthResponse
+	assert.Equal(t, "ok", response.Status)
+	assert.Equal(t, "Service is healthy", response.Message)
+	assert.Equal(t, "1.0.0", response.Version)
+	assert.Equal(t, "connected", response.Database) // ✅ Должен быть connected в тестах
+
+	// Проверяем timestamp
+	assert.Contains(t, response.Timestamp, "server")
+	assert.Contains(t, response.Timestamp, "unix")
+	assert.Contains(t, response.Timestamp, "iso")
 }

@@ -15,16 +15,14 @@ import (
 func main() {
 	cfg := config.Load()
 
-	// Правильный путь к миграциям в контейнере
 	m, err := migrate.New(
-		"file:///root/migrations", // Абсолютный путь в контейнере
+		"file:///app/migrations",
 		cfg.DatabaseURL,
 	)
 	if err != nil {
 		log.Fatal("Failed to create migrator:", err)
 	}
 
-	// Остальной код без изменений...
 	if len(os.Args) < 2 {
 		log.Fatal("Usage: migrate [up|down|version|force VERSION]")
 	}

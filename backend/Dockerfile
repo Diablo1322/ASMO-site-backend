@@ -21,15 +21,15 @@ FROM alpine:latest
 # Install postgresql-client for health checks
 RUN apk add --no-cache ca-certificates postgresql-client
 
-WORKDIR /root/
+WORKDIR /app
 
 # Copy both binaries
 COPY --from=builder /app/main .
 COPY --from=builder /app/migrate .
 
 # Create migrations directory and copy migrations
-RUN mkdir -p /root/migrations
-COPY --from=builder /app/migrations/*.sql /root/migrations/
+RUN mkdir -p /app/migrations
+COPY --from=builder /app/migrations/*.sql /app/migrations/
 
 # Expose port
 EXPOSE 3000

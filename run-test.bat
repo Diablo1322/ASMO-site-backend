@@ -70,7 +70,4 @@ docker-compose -f docker-compose.test.yml down
 echo.
 echo 🎯 Test execution completed!
 echo.
-echo 💡 Tip: Use 'make.bat test-unit' for quick unit tests
-echo 💡 Tip: Use 'make.bat test-integration' for integration tests
-echo.
 pause

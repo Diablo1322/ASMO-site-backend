@@ -11,7 +11,7 @@ import (
 // RunMigrations автоматически применяет миграции при запуске приложения
 func RunMigrations(databaseURL string) error {
 	m, err := migrate.New(
-		"file://../../migrations",
+		"file:///app/migrations",
 		databaseURL,
 	)
 	if err != nil {

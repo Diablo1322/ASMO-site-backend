@@ -13,9 +13,6 @@ echo 🛑 Stopping any running services...
 docker-compose -f docker-compose.prod.yml down 2>nul
 docker-compose -f docker-compose.dev.yml down 2>nul
 
-echo 🗑️  Cleaning up old containers and images...
-docker system prune -f
-
 echo 🚀 Starting development stack...
 docker-compose -f docker-compose.dev.yml up --build
 

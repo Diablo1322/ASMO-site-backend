@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   nginx:
     build:
@@ -15,47 +17,71 @@ services:
       - ./ssl:/etc/ssl/certs:ro
       - ./ssl:/etc/ssl/private:ro
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     environment:
-      - DATABASE_URL=postgres://user:password@postgres:5432/asmo_db?sslmode=disable
+      - ENVIRONMENT=production
       - PORT=3000
       - LOG_LEVEL=INFO
       - GIN_MODE=release
-      - ENVIRONMENT=production
+      # Database - отдельные переменные для безопасности
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=asmo_prod_user
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=asmo_production
+      - DB_SSL_MODE=require
+      # CORS
+      - ALLOWED_ORIGINS=https://frontend-domain.com
     depends_on:
       postgres:
         condition: service_healthy
     networks:
       - app-network
     restart: unless-stopped
-    volumes:
-      - ./backend:/app
-      - ./migrations:/app/migrations:ro
-    command: >
-      sh -c "
-        echo 'Running migrations...' &&
-        cd /app && ./migrate up &&
-        echo 'Starting production server...' &&
-        ./main
-      "
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   postgres:
     image: postgres:15-alpine
     environment:
-      - POSTGRES_DB=asmo_db
-      - POSTGRES_USER=user
-      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=asmo_production
+      - POSTGRES_USER=asmo_prod_user
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - app-network
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d asmo_db"]
+      test: ["CMD-SHELL", "pg_isready -U asmo_prod_user -d asmo_production"]
       interval: 10s
       timeout: 5s
       retries: 5
