@@ -5,19 +5,23 @@ echo ╔════════════════════════
 echo ║        ASMO BACKEND CONTROL          ║
 echo ╚══════════════════════════════════════╝
 echo.
+echo 📍 Frontend: Separate repository
+echo 📍 Backend:  Current project
+echo.
 
 :menu
 echo 📋 Select Mode:
 echo.
-echo   1 🚀 DEVELOPMENT (Next.js on :3001)
-echo   2 ✅ PRODUCTION (HTTPS)
+echo   1 🚀 DEVELOPMENT (Backend + DB)
+echo   2 ✅ PRODUCTION (Backend + DB + Redis)
 echo   3 🧪 Run Tests
 echo   4 📊 Service Status
-echo   5 🛑 Stop All
-echo   6 ❌ Exit
+echo   5 🔧 Database Tools
+echo   6 🛑 Stop All
+echo   7 ❌ Exit
 echo.
 
-set /p choice=Choose (1-6):
+set /p choice=Choose (1-7):
 
 if "%choice%"=="1" (
     call switch-to-dev.bat
@@ -42,16 +46,29 @@ if "%choice%"=="4" (
 )
 if "%choice%"=="5" (
     echo.
+    echo 🔧 Database Tools:
+    echo   1. Backup database
+    echo   2. View migrations
+    echo   3. Check connections
+    echo.
+    set /p db_choice="Choose: "
+    if "%db_choice%"=="1" (
+        docker-compose exec backend ./migrate backup
+    )
+    goto menu
+)
+if "%choice%"=="6" (
+    echo.
     echo 🛑 Stopping all services...
     docker-compose -f docker-compose.dev.yml down 2>nul
     docker-compose -f docker-compose.prod.yml down 2>nul
     echo ✅ All services stopped!
-    ping -n 2 127.0.0.1 >nul
+    timeout /t 2 >nul
     goto menu
 )
-if "%choice%"=="6" (
+if "%choice%"=="7" (
     echo 👋 Goodbye!
-    ping -n 1 127.0.0.1 >nul
+    timeout /t 1 >nul
     exit /b 0
 )
 

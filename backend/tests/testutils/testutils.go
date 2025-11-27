@@ -2,6 +2,7 @@ package testutils
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -144,3 +145,7 @@ func CleanupTestDB(db *sql.DB) error {
 	log.Println("Test database cleanup completed")
 	return db.Close()
 }
+
+var (
+	ErrNotFound = errors.New("key not found")
+)

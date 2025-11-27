@@ -1,0 +1,51 @@
+[DEFAULT]
+# Базовые настройки
+bantime = 3600
+findtime = 600
+maxretry = 5
+backend = auto
+destemail = admin@your-domain.com
+sender = fail2ban@your-domain.com
+action = %(action_)s
+
+[sshd]
+enabled = true
+port = ssh
+logpath = /var/log/auth.log
+maxretry = 3
+
+[sshd-ddos]
+enabled = true
+port = ssh
+logpath = /var/log/auth.log
+maxretry = 5
+
+[nginx-http-auth]
+enabled = true
+port = http,https
+logpath = /var/log/nginx/error.log
+maxretry = 3
+
+[nginx-botsearch]
+enabled = true
+port = http,https
+logpath = /var/log/nginx/access.log
+maxretry = 10
+findtime = 300
+bantime = 7200
+
+[nginx-limit-req]
+enabled = true
+port = http,https
+logpath = /var/log/nginx/error.log
+maxretry = 5
+findtime = 300
+
+[recidive]
+enabled = true
+logpath = /var/log/fail2ban.log
+action = iptables-allports[name=recidive]
+         sendmail-whois-lines[name=recidive, logpath=/var/log/fail2ban.log]
+bantime = 604800  ; 1 week
+findtime = 86400  ; 1 day
+maxretry = 5

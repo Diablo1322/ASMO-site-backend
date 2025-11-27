@@ -155,7 +155,7 @@ DB_SSL_MODE=require
 PORT=3000
 LOG_LEVEL=INFO
 ENVIRONMENT=production
-ALLOWED_ORIGINS=https://your-domain.com
+ALLOWED_ORIGINS=https://need-to-change-domain.com
 🔒 Безопасность
 ✅ HTTPS (Production)
 

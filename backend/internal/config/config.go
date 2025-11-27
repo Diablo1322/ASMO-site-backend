@@ -8,9 +8,11 @@ import (
 type Config struct {
 	Port           string
 	DatabaseURL    string
+	RedisURL       string
 	LogLevel       string
 	Environment    string
 	AllowedOrigins string
+	PrometheusMetrics bool
 }
 
 func Load() *Config {
@@ -19,9 +21,11 @@ func Load() *Config {
 	return &Config{
 		Port:           getEnv("PORT", "3000"),
 		DatabaseURL:    getDatabaseURL(environment),
+		RedisURL:       getRedisURL(environment),
 		LogLevel:       getEnv("LOG_LEVEL", getDefaultLogLevel(environment)),
 		Environment:    environment,
 		AllowedOrigins: getEnv("ALLOWED_ORIGINS", getAllowedOrigins(environment)),
+		PrometheusMetrics: getEnv("PROMETHEUS_METRICS", getDefaultPrometheusMetrics(environment)) == "true",
 	}
 }
 
@@ -40,11 +44,27 @@ func getDatabaseURL(environment string) string {
 	return getEnv("DATABASE_URL", "postgres://user:password@postgres:5432/asmo_db?sslmode=disable")
 }
 
+func getRedisURL(environment string) string {
+	if environment == "production" {
+		host := getEnv("REDIS_HOST", "redis")
+		port := getEnv("REDIS_PORT", "6379")
+		password := getEnv("REDIS_PASSWORD", "")
+		db := getEnv("REDIS_DB", "0")
+
+		if password != "" {
+			return "redis://:" + password + "@" + host + ":" + port + "/" + db
+		}
+		return "redis://" + host + ":" + port + "/" + db
+	}
+
+	return getEnv("REDIS_URL", "redis://redis:6379/0")
+}
+
 func getAllowedOrigins(environment string) string {
 	if environment == "production" {
-		return getEnv("ALLOWED_ORIGINS", "https://production-domain.com")
+		return getEnv("ALLOWED_ORIGINS", "https://need-to-change-domain.com")
 	}
-	return getEnv("ALLOWED_ORIGINS", "http://localhost:3001,http://127.0.0.1:3001")
+	return getEnv("ALLOWED_ORIGINS", "http://localhost:3001,http://127.0.0.1:3001,http://0.0.0.0:3001")
 }
 
 func getDefaultLogLevel(environment string) string {
@@ -59,4 +79,11 @@ func getEnv(key, defaultValue string) string {
 		return strings.TrimSpace(value)
 	}
 	return defaultValue
+}
+
+func getDefaultPrometheusMetrics(environment string) string {
+	if environment == "development" {
+		return "false"
+	}
+	return "true"
 }

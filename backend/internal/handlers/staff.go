@@ -3,7 +3,11 @@ package handlers
 import (
 	"database/sql"
 	"net/http"
+	"strconv"
+	"time"
 
+	"ASMO-site-backend/internal/cache"
+	"ASMO-site-backend/internal/metrics"
 	"ASMO-site-backend/internal/models"
 	"ASMO-site-backend/internal/validation"
 
@@ -11,19 +15,42 @@ import (
 )
 
 type StaffHandler struct {
-	db *sql.DB
+	db    *sql.DB
+	cache cache.Cache
 }
 
-func NewStaffHandler(db *sql.DB) *StaffHandler {
-	return &StaffHandler{db: db}
+func NewStaffHandler(db *sql.DB, cache cache.Cache) *StaffHandler {
+	return &StaffHandler{
+		db:    db,
+		cache: cache,
+	}
 }
 
 func (h *StaffHandler) GetStaff(c *gin.Context) {
+	start := time.Now()
+	cacheKey := "staff:all"
+
+	// Пробуем получить из кэша
+	var staff []models.Staff
+	if err := h.cache.Get(cacheKey, &staff); err == nil {
+		metrics.RecordDatabaseQuery("cache_hit", "staff", time.Since(start))
+		c.JSON(http.StatusOK, gin.H{
+			"staff":  staff,
+			"count":  len(staff),
+			"cached": true,
+		})
+		return
+	}
+
+	// Если нет в кэше, получаем из БД
 	rows, err := h.db.Query(`
 		SELECT id, name, description, img, role, created_at, update_at
 		FROM staff
 		ORDER BY created_at DESC
 	`)
+
+	metrics.RecordDatabaseQuery("select", "staff", time.Since(start))
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Failed to fetch staff",
@@ -32,7 +59,7 @@ func (h *StaffHandler) GetStaff(c *gin.Context) {
 	}
 	defer rows.Close()
 
-	var staff []models.Staff
+	staff = []models.Staff{}
 	for rows.Next() {
 		var member models.Staff
 		err := rows.Scan(
@@ -52,13 +79,18 @@ func (h *StaffHandler) GetStaff(c *gin.Context) {
 		staff = []models.Staff{}
 	}
 
+	// Сохраняем в кэш на 5 минут
+	h.cache.Set(cacheKey, staff, 5*time.Minute)
+
 	c.JSON(http.StatusOK, gin.H{
-		"staff": staff,
-		"count": len(staff),
+		"staff":  staff,
+		"count":  len(staff),
+		"cached": false,
 	})
 }
 
 func (h *StaffHandler) GetStaffMember(c *gin.Context) {
+	start := time.Now()
 	var req models.GetProjectRequest
 	if err := c.ShouldBindUri(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -75,7 +107,16 @@ func (h *StaffHandler) GetStaffMember(c *gin.Context) {
 		return
 	}
 
+	cacheKey := "staff:" + strconv.Itoa(req.ID)
+
+	// Пробуем получить из кэша
 	var member models.Staff
+	if err := h.cache.Get(cacheKey, &member); err == nil {
+		metrics.RecordDatabaseQuery("cache_hit", "staff", time.Since(start))
+		c.JSON(http.StatusOK, member)
+		return
+	}
+
 	err := h.db.QueryRow(`
 		SELECT id, name, description, img, role, created_at, update_at
 		FROM staff WHERE id = $1
@@ -83,6 +124,8 @@ func (h *StaffHandler) GetStaffMember(c *gin.Context) {
 		&member.ID, &member.Name, &member.Description, &member.Img,
 		&member.Role, &member.CreatedAt, &member.UpdateAt,
 	)
+
+	metrics.RecordDatabaseQuery("select", "staff", time.Since(start))
 
 	if err == sql.ErrNoRows {
 		c.JSON(http.StatusNotFound, gin.H{
@@ -96,10 +139,14 @@ func (h *StaffHandler) GetStaffMember(c *gin.Context) {
 		return
 	}
 
+	// Сохраняем в кэш на 10 минут
+	h.cache.Set(cacheKey, member, 10*time.Minute)
+
 	c.JSON(http.StatusOK, member)
 }
 
 func (h *StaffHandler) CreateStaff(c *gin.Context) {
+	start := time.Now()
 	var req models.CreateStaffRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -123,12 +170,17 @@ func (h *StaffHandler) CreateStaff(c *gin.Context) {
 		RETURNING id
 	`, req.Name, req.Description, req.Img, req.Role).Scan(&id)
 
+	metrics.RecordDatabaseQuery("insert", "staff", time.Since(start))
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Failed to create staff member",
 		})
 		return
 	}
+
+	// Инвалидируем кэш при создании нового сотрудника
+	h.cache.Delete("staff:all")
 
 	c.JSON(http.StatusCreated, gin.H{
 		"message": "Staff member created successfully",

@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"ASMO-site-backend/internal/metrics"
 	"ASMO-site-backend/internal/models"
 	"ASMO-site-backend/pkg/logger"
 
@@ -43,6 +44,7 @@ func (h *HealthHandler) HealthCheck(c *gin.Context) {
 
 	// Проверяем подключение к базе данных
 	if h.db != nil {
+		start := time.Now()
 		if err := h.db.Ping(); err != nil {
 			dbStatus = "disconnected"
 			dbError = err.Error()
@@ -54,6 +56,8 @@ func (h *HealthHandler) HealthCheck(c *gin.Context) {
 				"time":    time.Now().Format(time.RFC3339),
 			})
 		}
+		// Записываем метрику для health check
+		metrics.RecordDatabaseQuery("ping", "health", time.Since(start))
 	} else {
 		dbStatus = "no_connection"
 		dbError = "database instance is nil"

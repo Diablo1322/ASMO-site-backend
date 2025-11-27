@@ -11,6 +11,7 @@ import (
 	"ASMO-site-backend/internal/models"
 	"ASMO-site-backend/pkg/logger"
 	testutils "ASMO-site-backend/tests/testutils"
+	"ASMO-site-backend/internal/cache"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -25,12 +26,18 @@ func setupTestRouter() *gin.Engine {
 
 	logger.New("test", logger.INFO)
 
-	// Инициализируем раздельные хэндлеры
+	// Создаем мок Redis для тестов
+	redisMock := testutils.NewRedisMock()
+
+	// Приводим к интерфейсу Cache (мок уже реализует интерфейс)
+	var cacheInterface cache.Cache = redisMock
+
+	// Инициализируем хэндлеры с Redis моком
 	healthHandler := handlers.NewHealthHandlerWithLogger(db, logger.New("test", logger.INFO))
-	webHandler := handlers.NewWebProjectsHandler(db)
-	mobileHandler := handlers.NewMobileProjectsHandler(db)
-	botHandler := handlers.NewBotProjectsHandler(db)
-	staffHandler := handlers.NewStaffHandler(db)
+	webHandler := handlers.NewWebProjectsHandler(db, cacheInterface)        // ✅ ИНТЕРФЕЙС
+	mobileHandler := handlers.NewMobileProjectsHandler(db, cacheInterface)  // ✅ ИНТЕРФЕЙС
+	botHandler := handlers.NewBotProjectsHandler(db, cacheInterface)        // ✅ ИНТЕРФЕЙС
+	staffHandler := handlers.NewStaffHandler(db, cacheInterface)
 
 	router := gin.Default()
 
@@ -57,18 +64,21 @@ func setupTestRouter() *gin.Engine {
 		web := api.Group("/WebApplications")
 		{
 			web.GET("/:id", webHandler.GetWebProject)
+			web.GET("/", webHandler.GetWebProjects)
 			web.POST("/", webHandler.CreateWebProject)
 		}
 
 		mobile := api.Group("/MobileApplications")
 		{
 			mobile.GET("/:id", mobileHandler.GetMobileProject)
+			mobile.GET("/", mobileHandler.GetMobileProjects)
 			mobile.POST("/", mobileHandler.CreateMobileProject)
 		}
 
 		bots := api.Group("/Bots")
 		{
 			bots.GET("/:id", botHandler.GetBotProject)
+			bots.GET("/", botHandler.GetBotProjects)
 			bots.POST("/", botHandler.CreateBotProject)
 		}
 
@@ -230,7 +240,7 @@ func TestGetStaff(t *testing.T) {
 	router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusCreated, w.Code)
 
-	// Now get all staff
+	// Now get all staff - первый запрос должен быть из БД
 	req = httptest.NewRequest("GET", "/api/Staff", nil)
 	w = httptest.NewRecorder()
 	router.ServeHTTP(w, req)
@@ -242,9 +252,19 @@ func TestGetStaff(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Contains(t, response, "staff")
 	assert.Contains(t, response, "count")
+	assert.Equal(t, false, response["cached"])
 
 	staffList := response["staff"].([]interface{})
 	assert.Greater(t, len(staffList), 0)
+
+	// Второй запрос - должен быть из кэша
+	req = httptest.NewRequest("GET", "/api/Staff", nil)
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	err = json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.Equal(t, true, response["cached"])
 }
 
 func TestGetNonExistentProject(t *testing.T) {

@@ -13,20 +13,24 @@ docker-compose -f docker-compose.dev.yml down 2>nul
 docker-compose -f docker-compose.prod.yml down 2>nul
 
 echo.
-echo 🧪 Building test database...
+echo 🧪 Building test environment...
 docker-compose -f docker-compose.test.yml build
 
 echo.
-echo 🚀 Starting test database...
+echo 🚀 Starting test services (DB + Redis)...
 docker-compose -f docker-compose.test.yml up -d
 
 echo.
-echo ⏳ Waiting for test database to be ready...
-ping -n 10 127.0.0.1 >nul
+echo ⏳ Waiting for test services to be ready...
+timeout /t 10 /nobreak >nul
 
 echo.
-echo 🔍 Debugging test setup...
-call debug-test-db.bat
+echo 🔍 Checking test database connection...
+docker-compose -f docker-compose.test.yml exec -T test-database psql -U test -d testdb -c "SELECT version();"
+
+echo.
+echo 🔍 Checking test Redis connection...
+docker-compose -f docker-compose.test.yml exec -T test-redis redis-cli ping
 
 echo.
 echo ╔══════════════════════════════════════╗
@@ -38,7 +42,7 @@ cd backend
 
 echo.
 echo "=== 🔬 UNIT TESTS ==="
-go test -v -short ./tests/unit/...
+go test -v -short ./tests/unit/... -cover -coverprofile=../test-results/unit-coverage.out
 
 if %errorlevel% neq 0 (
     echo.
@@ -48,13 +52,22 @@ if %errorlevel% neq 0 (
 
 echo.
 echo "=== 🔍 INTEGRATION TESTS ==="
-go test -v ./tests/integration/...
+go test -v ./tests/integration/... -cover -coverprofile=../test-results/integration-coverage.out
 
 if %errorlevel% neq 0 (
     echo.
     echo ❌ Integration tests failed!
     goto cleanup
 )
+
+echo.
+echo "=== 📊 GENERATING COVERAGE REPORT ==="
+go tool cover -html=../test-results/unit-coverage.out -o ../test-results/unit-coverage.html
+go tool cover -html=../test-results/integration-coverage.out -o ../test-results/integration-coverage.html
+
+echo 📈 Coverage reports generated:
+echo    - test-results/unit-coverage.html
+echo    - test-results/integration-coverage.html
 
 echo.
 echo ╔══════════════════════════════════════╗
@@ -68,6 +81,7 @@ cd ..
 docker-compose -f docker-compose.test.yml down
 
 echo.
-echo 🎯 Test execution completed!
+echo 📊 Test execution completed!
+echo 📁 Results saved in: test-results/
 echo.
 pause

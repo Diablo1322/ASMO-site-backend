@@ -3,7 +3,9 @@ package main
 import (
 	"log"
 	"strings"
+	"time"
 
+	"ASMO-site-backend/internal/cache"
 	"ASMO-site-backend/internal/config"
 	"ASMO-site-backend/internal/database"
 	"ASMO-site-backend/internal/handlers"
@@ -13,8 +15,76 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"golang.org/x/time/rate"
 )
+
+// Prometheus middleware
+func prometheusMiddleware() gin.HandlerFunc {
+	// Создаем метрики внутри middleware чтобы избежать глобальных переменных
+	httpRequestsTotal := prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "http_requests_total",
+			Help: "Total number of HTTP requests",
+		},
+		[]string{"method", "path", "status"},
+	)
+
+	httpRequestDuration := prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    "http_request_duration_seconds",
+			Help:    "HTTP request duration in seconds",
+			Buckets: prometheus.DefBuckets,
+		},
+		[]string{"method", "path"},
+	)
+
+	httpResponseSize := prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    "http_response_size_bytes",
+			Help:    "HTTP response size in bytes",
+			Buckets: prometheus.ExponentialBuckets(100, 10, 8),
+		},
+		[]string{"method", "path"},
+	)
+
+	// Регистрируем метрики
+	prometheus.MustRegister(httpRequestsTotal)
+	prometheus.MustRegister(httpRequestDuration)
+	prometheus.MustRegister(httpResponseSize)
+
+	return func(c *gin.Context) {
+		start := time.Now()
+		path := c.FullPath()
+		if path == "" {
+			path = c.Request.URL.Path
+		}
+
+		// Process request
+		c.Next()
+
+		// Record metrics after request is processed
+		duration := time.Since(start).Seconds()
+		status := c.Writer.Status()
+
+		httpRequestsTotal.WithLabelValues(
+			c.Request.Method,
+			path,
+			string(rune(status)),
+		).Inc()
+
+		httpRequestDuration.WithLabelValues(
+			c.Request.Method,
+			path,
+		).Observe(duration)
+
+		httpResponseSize.WithLabelValues(
+			c.Request.Method,
+			path,
+		).Observe(float64(c.Writer.Size()))
+	}
+}
 
 func main() {
 	// Load configuration
@@ -32,6 +102,7 @@ func main() {
 	appLogger.Info("Application starting", map[string]interface{}{
 		"port":        cfg.Port,
 		"environment": cfg.Environment,
+		"redis_url":   cfg.RedisURL,
 	})
 
 	// Initialize database
@@ -44,6 +115,21 @@ func main() {
 	}
 	defer db.Close()
 
+	// Initialize Redis cache
+	redisCache, err := cache.NewRedisCache(cfg.RedisURL)
+	if err != nil {
+		appLogger.Error("Failed to connect to Redis", map[string]interface{}{
+			"error": err.Error(),
+			"url":   cfg.RedisURL,
+		})
+		log.Fatal("Failed to connect to Redis:", err)
+	}
+	defer redisCache.Close()
+
+	appLogger.Info("Redis connected successfully", map[string]interface{}{
+		"url": cfg.RedisURL,
+	})
+
 	// Initialize validation
 	validation.Init()
 
@@ -54,21 +140,33 @@ func main() {
 		gin.SetMode(gin.DebugMode)
 	}
 
-	// ✅ ИСПРАВЛЕНО: Используем обычное присваивание (=) вместо := для существующих переменных
+	// Initialize handlers with Redis cache
 	healthHandler := handlers.NewHealthHandlerWithLogger(db, appLogger)
-	webHandler := handlers.NewWebProjectsHandler(db)
-	mobileHandler := handlers.NewMobileProjectsHandler(db)
-	botHandler := handlers.NewBotProjectsHandler(db)
-	staffHandler := handlers.NewStaffHandler(db)
+	webHandler := handlers.NewWebProjectsHandler(db, redisCache)
+	mobileHandler := handlers.NewMobileProjectsHandler(db, redisCache)
+	botHandler := handlers.NewBotProjectsHandler(db, redisCache)
+	staffHandler := handlers.NewStaffHandler(db, redisCache)
 
 	// Initialize router
 	router := gin.Default()
+
+	// Add Prometheus middleware if metrics are enabled
+	if cfg.PrometheusMetrics {
+		router.Use(prometheusMiddleware())
+
+		// Expose metrics endpoint
+		router.GET("/metrics", gin.WrapH(promhttp.Handler()))
+
+		appLogger.Info("Prometheus metrics enabled", map[string]interface{}{
+			"endpoint": "/metrics",
+		})
+	}
 
 	// CORS configuration
 	corsConfig := cors.Config{
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Length", "Content-Type", "Authorization", "Accept", "X-Requested-With"},
-		ExposeHeaders:    []string{"Content-Length"},
+		ExposeHeaders:    []string{"Content-Length", "Content-Range"},
 		AllowCredentials: true,
 		MaxAge:           12 * 60 * 60,
 	}
@@ -172,9 +270,11 @@ func main() {
 	// Root endpoint
 	router.GET("/", func(c *gin.Context) {
 		c.JSON(200, gin.H{
-			"message":     "ASMO Backend API",
-			"version":     "1.0.0",
-			"environment": cfg.Environment,
+			"message":       "ASMO Backend API",
+			"version":       "1.0.0",
+			"environment":   cfg.Environment,
+			"metrics":       cfg.PrometheusMetrics,
+			"documentation": "/api/health",
 		})
 	})
 
@@ -182,14 +282,17 @@ func main() {
 	router.NoRoute(func(c *gin.Context) {
 		c.JSON(404, gin.H{
 			"error":   "Endpoint not found",
-			"message": "Check the API documentation",
+			"message": "Check the API documentation at /api/health",
+			"metrics": cfg.PrometheusMetrics,
 		})
 	})
 
 	// Start server
 	appLogger.Info("Server starting", map[string]interface{}{
-		"port":        cfg.Port,
-		"environment": cfg.Environment,
+		"port":          cfg.Port,
+		"environment":   cfg.Environment,
+		"metrics":       cfg.PrometheusMetrics,
+		"redis_enabled": true,
 	})
 	log.Printf("Server running in %s mode on http://localhost:%s", cfg.Environment, cfg.Port)
 	log.Fatal(router.Run(":" + cfg.Port))

@@ -40,7 +40,7 @@ services:
       - DB_NAME=asmo_production
       - DB_SSL_MODE=require
       # CORS
-      - ALLOWED_ORIGINS=https://frontend-domain.com
+      - ALLOWED_ORIGINS=https://need-to-change-frontend-domain.com
     depends_on:
       postgres:
         condition: service_healthy
