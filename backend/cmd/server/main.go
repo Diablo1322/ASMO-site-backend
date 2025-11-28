@@ -260,7 +260,7 @@ func main() {
 	}
 
 	// Staff routes
-	staff := router.Group("/api/Staff")
+	staff := router.Group("/api/Members")
 	{
 		staff.GET("/:id", staffHandler.GetStaffMember)
 		staff.GET("/", staffHandler.GetStaff)
