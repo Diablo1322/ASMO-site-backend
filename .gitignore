@@ -1,151 +1,151 @@
-# # ============================================
-# # КРИТИЧЕСКИ ВАЖНЫЕ ФАЙЛЫ (НИКОГДА НЕ В GIT)
-# # ============================================
+# ============================================
+# КРИТИЧЕСКИ ВАЖНЫЕ ФАЙЛЫ (НИКОГДА НЕ В GIT)
+# ============================================
 
-# # Environment variables (ПАРОЛИ!)
-# .env
-# .env.*
-# !.env.example
-# *.env
+# Environment variables (ПАРОЛИ!)
+.env
+.env.*
+!.env.example
+*.env
 
-# # SSL certificates and private keys
-# ssl/
-# *.key
-# *.pem
-# *.crt
-# *.csr
-# *.p12
-# *.pfx
-# *.der
+# SSL certificates and private keys
+ssl/
+*.key
+*.pem
+*.crt
+*.csr
+*.p12
+*.pfx
+*.der
 
-# # Secrets and passwords
-# *.secret
-# *.priv
-# *.pass
-# *.pwd
-# secrets/
-# passwords/
-# credentials/
+# Secrets and passwords
+*.secret
+*.priv
+*.pass
+*.pwd
+secrets/
+passwords/
+credentials/
 
-# # Database backups and data
-# backups/
-# data/
-# volumes/
-# *.backup
-# *.dump
-# *.sql.gz
-# *.tar.gz
+# Database backups and data
+backups/
+data/
+volumes/
+*.backup
+*.dump
+*.sql.gz
+*.tar.gz
 
-# # ============================================
-# # БИНАРНЫЕ ФАЙЛЫ И СБОРКИ
-# # ============================================
+# ============================================
+# БИНАРНЫЕ ФАЙЛЫ И СБОРКИ
+# ============================================
 
-# # Binaries for programs and plugins
-# *.exe
-# *.exe~
-# *.dll
-# *.so
-# *.dylib
-# *.test
-# *.out
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
 
-# # Go binaries
-# backend/main
-# backend/migrate
-# bin/
+# Go binaries
+backend/main
+backend/migrate
+bin/
 
-# # Build artifacts
-# /dist/
-# /build/
-# /bin/
+# Build artifacts
+/dist/
+/build/
+/bin/
 
-# # Dependency directories
-# vendor/
+# Dependency directories
+vendor/
 
-# # Go workspace file
-# go.work
+# Go workspace file
+go.work
 
-# # ============================================
-# # ТЕСТЫ И ОТЧЕТЫ
-# # ============================================
+# ============================================
+# ТЕСТЫ И ОТЧЕТЫ
+# ============================================
 
-# test-results/
-# coverage/
-# *.cover
-# *.prof
-# *.testout
+test-results/
+coverage/
+*.cover
+*.prof
+*.testout
 
-# # ============================================
-# # ИДЕ И РЕДАКТОРЫ
-# # ============================================
+# ============================================
+# ИДЕ И РЕДАКТОРЫ
+# ============================================
 
-# # VSCode
-# .vscode/
-# !.vscode/settings.json
-# !.vscode/tasks.json
-# !.vscode/launch.json
-# !.vscode/extensions.json
+# VSCode
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
 
-# # JetBrains
-# .idea/
-# *.iml
-# *.ipr
-# *.iws
+# JetBrains
+.idea/
+*.iml
+*.ipr
+*.iws
 
-# # Editors
-# *.swp
-# *.swo
-# *~
-# .~lock.*
+# Editors
+*.swp
+*.swo
+*~
+.~lock.*
 
-# # ============================================
-# # ЛОГИ И ВРЕМЕННЫЕ ФАЙЛЫ
-# # ============================================
+# ============================================
+# ЛОГИ И ВРЕМЕННЫЕ ФАЙЛЫ
+# ============================================
 
-# # Logs
-# *.log
-# logs/
-# backend/logs/
+# Logs
+*.log
+logs/
+backend/logs/
 
-# # OS files
-# .DS_Store
-# .DS_Store?
-# ._*
-# .Spotlight-V100
-# .Trashes
-# ehthumbs.db
-# Thumbs.db
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 
-# # Temporary files
-# tmp/
-# temp/
-# *.tmp
-# *.temp
-# *.cache
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+*.cache
 
-# # ============================================
-# # БАЗЫ ДАННЫХ
-# # ============================================
+# ============================================
+# БАЗЫ ДАННЫХ
+# ============================================
 
-# *.db
-# *.sqlite
-# *.sqlite3
-# *.db-journal
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
 
-# # Docker override files
-# .docker/
-# docker-compose.override.yml
+# Docker override files
+.docker/
+docker-compose.override.yml
 
-# # ============================================
-# # НАСТРОЙКИ ДЛЯ РАЗРАБОТЧИКОВ
-# # ============================================
+# ============================================
+# НАСТРОЙКИ ДЛЯ РАЗРАБОТЧИКОВ
+# ============================================
 
-# # Local development configs
-# docker-compose.local.yml
-# docker-compose.override.yml
-# *.local.*
+# Local development configs
+docker-compose.local.yml
+docker-compose.override.yml
+*.local.*
 
-# # Personal notes
-# TODO.md
-# notes/
-# scratch/
+# Personal notes
+TODO.md
+notes/
+scratch/
