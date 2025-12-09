@@ -1,45 +1,3 @@
-# ============================================
-# КРИТИЧЕСКИ ВАЖНЫЕ ФАЙЛЫ (НИКОГДА НЕ В GIT)
-# ============================================
-
-# Environment variables (ПАРОЛИ!)
-.env
-.env.*
-!.env.example
-*.env
-
-# SSL certificates and private keys
-ssl/
-*.key
-*.pem
-*.crt
-*.csr
-*.p12
-*.pfx
-*.der
-
-# Secrets and passwords
-*.secret
-*.priv
-*.pass
-*.pwd
-secrets/
-passwords/
-credentials/
-
-# Database backups and data
-backups/
-data/
-volumes/
-*.backup
-*.dump
-*.sql.gz
-*.tar.gz
-
-# ============================================
-# БИНАРНЫЕ ФАЙЛЫ И СБОРКИ
-# ============================================
-
 # Binaries for programs and plugins
 *.exe
 *.exe~
@@ -49,103 +7,48 @@ volumes/
 *.test
 *.out
 
-# Go binaries
-backend/main
-backend/migrate
-bin/
-
-# Build artifacts
-/dist/
-/build/
-/bin/
-
 # Dependency directories
 vendor/
 
 # Go workspace file
 go.work
 
-# ============================================
-# ТЕСТЫ И ОТЧЕТЫ
-# ============================================
+# Environment files
+.env
+.env.local
+.env.production
 
-test-results/
-coverage/
-*.cover
-*.prof
-*.testout
+# Docker
+.docker/
+docker-compose.override.yml
 
-# ============================================
-# ИДЕ И РЕДАКТОРЫ
-# ============================================
-
-# VSCode
+# IDE
 .vscode/
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-
-# JetBrains
 .idea/
-*.iml
-*.ipr
-*.iws
-
-# Editors
 *.swp
 *.swo
-*~
-.~lock.*
-
-# ============================================
-# ЛОГИ И ВРЕМЕННЫЕ ФАЙЛЫ
-# ============================================
 
 # Logs
 *.log
 logs/
 backend/logs/
 
-# OS files
+# Build artifacts
+/dist/
+/build/
+/bin/
+/backend/main
+/backend/migrate
+
+# OS
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
 Thumbs.db
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
 
 # Temporary files
 tmp/
 temp/
-*.tmp
-*.temp
-*.cache
-
-# ============================================
-# БАЗЫ ДАННЫХ
-# ============================================
-
-*.db
-*.sqlite
-*.sqlite3
-*.db-journal
-
-# Docker override files
-.docker/
-docker-compose.override.yml
-
-# ============================================
-# НАСТРОЙКИ ДЛЯ РАЗРАБОТЧИКОВ
-# ============================================
-
-# Local development configs
-docker-compose.local.yml
-docker-compose.override.yml
-*.local.*
-
-# Personal notes
-TODO.md
-notes/
-scratch/
