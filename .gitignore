@@ -1,54 +1,151 @@
-# Binaries for programs and plugins
-*.exe
-*.exe~
-*.dll
-*.so
-*.dylib
-*.test
-*.out
+# # ============================================
+# # КРИТИЧЕСКИ ВАЖНЫЕ ФАЙЛЫ (НИКОГДА НЕ В GIT)
+# # ============================================
 
-# Dependency directories
-vendor/
+# # Environment variables (ПАРОЛИ!)
+# .env
+# .env.*
+# !.env.example
+# *.env
 
-# Go workspace file
-go.work
+# # SSL certificates and private keys
+# ssl/
+# *.key
+# *.pem
+# *.crt
+# *.csr
+# *.p12
+# *.pfx
+# *.der
 
-# Environment files
-.env
-.env.local
-.env.production
+# # Secrets and passwords
+# *.secret
+# *.priv
+# *.pass
+# *.pwd
+# secrets/
+# passwords/
+# credentials/
 
-# Docker
-.docker/
-docker-compose.override.yml
+# # Database backups and data
+# backups/
+# data/
+# volumes/
+# *.backup
+# *.dump
+# *.sql.gz
+# *.tar.gz
 
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
+# # ============================================
+# # БИНАРНЫЕ ФАЙЛЫ И СБОРКИ
+# # ============================================
 
-# Logs
-*.log
-logs/
-backend/logs/
+# # Binaries for programs and plugins
+# *.exe
+# *.exe~
+# *.dll
+# *.so
+# *.dylib
+# *.test
+# *.out
 
-# Build artifacts
-/dist/
-/build/
-/bin/
-/backend/main
-/backend/migrate
+# # Go binaries
+# backend/main
+# backend/migrate
+# bin/
 
-# OS
-.DS_Store
-Thumbs.db
+# # Build artifacts
+# /dist/
+# /build/
+# /bin/
 
-# Database
-*.db
-*.sqlite
-*.sqlite3
+# # Dependency directories
+# vendor/
 
-# Temporary files
-tmp/
-temp/
+# # Go workspace file
+# go.work
+
+# # ============================================
+# # ТЕСТЫ И ОТЧЕТЫ
+# # ============================================
+
+# test-results/
+# coverage/
+# *.cover
+# *.prof
+# *.testout
+
+# # ============================================
+# # ИДЕ И РЕДАКТОРЫ
+# # ============================================
+
+# # VSCode
+# .vscode/
+# !.vscode/settings.json
+# !.vscode/tasks.json
+# !.vscode/launch.json
+# !.vscode/extensions.json
+
+# # JetBrains
+# .idea/
+# *.iml
+# *.ipr
+# *.iws
+
+# # Editors
+# *.swp
+# *.swo
+# *~
+# .~lock.*
+
+# # ============================================
+# # ЛОГИ И ВРЕМЕННЫЕ ФАЙЛЫ
+# # ============================================
+
+# # Logs
+# *.log
+# logs/
+# backend/logs/
+
+# # OS files
+# .DS_Store
+# .DS_Store?
+# ._*
+# .Spotlight-V100
+# .Trashes
+# ehthumbs.db
+# Thumbs.db
+
+# # Temporary files
+# tmp/
+# temp/
+# *.tmp
+# *.temp
+# *.cache
+
+# # ============================================
+# # БАЗЫ ДАННЫХ
+# # ============================================
+
+# *.db
+# *.sqlite
+# *.sqlite3
+# *.db-journal
+
+# # Docker override files
+# .docker/
+# docker-compose.override.yml
+
+# # ============================================
+# # НАСТРОЙКИ ДЛЯ РАЗРАБОТЧИКОВ
+# # ============================================
+
+# # Local development configs
+# docker-compose.local.yml
+# docker-compose.override.yml
+# *.local.*
+
+# # Personal notes
+# TODO.md
+# notes/
+# scratch/
