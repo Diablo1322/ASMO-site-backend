@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"strings"
+	"fmt"
 )
 
 type Config struct {
@@ -45,19 +46,18 @@ func getDatabaseURL(environment string) string {
 }
 
 func getRedisURL(environment string) string {
-	if environment == "production" {
-		host := getEnv("REDIS_HOST", "redis")
-		port := getEnv("REDIS_PORT", "6379")
-		password := getEnv("REDIS_PASSWORD", "")
-		db := getEnv("REDIS_DB", "0")
+    if environment == "production" {
+        host := getEnv("REDIS_HOST", "redis")
+        port := getEnv("REDIS_PORT", "6379")
+        password := getEnv("REDIS_PASSWORD", "")  // Пароль из переменной
+        db := getEnv("REDIS_DB", "0")
 
-		if password != "" {
-			return "redis://:" + password + "@" + host + ":" + port + "/" + db
-		}
-		return "redis://" + host + ":" + port + "/" + db
-	}
-
-	return getEnv("REDIS_URL", "redis://redis:6379/0")
+        if password != "" {
+            return fmt.Sprintf("redis://:%s@%s:%s/%s", password, host, port, db)
+        }
+        return fmt.Sprintf("redis://%s:%s/%s", host, port, db)
+    }
+    return getEnv("REDIS_URL", "redis://redis:6379/0")
 }
 
 func getAllowedOrigins(environment string) string {

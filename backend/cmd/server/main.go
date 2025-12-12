@@ -172,20 +172,17 @@ func main() {
 	}
 
 	if cfg.Environment == "development" {
-		// В разработке разрешаем локальные адреса
-		corsConfig.AllowOriginFunc = func(origin string) bool {
-			return strings.Contains(origin, "://localhost:3001") ||
-				strings.Contains(origin, "://127.0.0.1:3001") ||
-				strings.Contains(origin, "://0.0.0.0:3001")
-		}
-	} else {
-		// В продакшене только разрешенные домены
-		allowedOrigins := strings.Split(cfg.AllowedOrigins, ",")
-		for i, origin := range allowedOrigins {
-			allowedOrigins[i] = strings.TrimSpace(origin)
-		}
-		corsConfig.AllowOrigins = allowedOrigins
-	}
+    corsConfig.AllowOriginFunc = func(origin string) bool {
+        return strings.Contains(origin, "://localhost:3001") ||
+               strings.Contains(origin, "://127.0.0.1:3001") ||
+               strings.Contains(origin, "://0.0.0.0:3001") ||
+               strings.Contains(origin, "://frontend:3001")
+    }
+    } else {
+        origins := strings.Split(cfg.AllowedOrigins, ",")
+        origins = append(origins, "http://frontend:3001")
+        corsConfig.AllowOrigins = origins
+    }
 
 	router.Use(cors.New(corsConfig))
 

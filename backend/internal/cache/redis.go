@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -18,34 +19,32 @@ type RedisCache struct {
 var _ Cache = (*RedisCache)(nil)
 
 func NewRedisCache(redisURL string) (*RedisCache, error) {
-	opts, err := redis.ParseURL(redisURL)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse Redis URL: %w", err)
-	}
+    opts, err := redis.ParseURL(redisURL)
+    if err != nil {
+        log.Printf("⚠️ Failed to parse Redis URL: %v", err)
+        return &RedisCache{connected: false}, nil  // Fallback без паники
+    }
 
-	client := redis.NewClient(opts)
-	ctx := context.Background()
+    client := redis.NewClient(opts)
 
-	// Test connection with timeout
-	timeoutCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
+    // Таймаут подключения
+    ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+    defer cancel()
 
-	if err := client.Ping(timeoutCtx).Err(); err != nil {
-		// Возвращаем "fallback" кэш который логирует но не падает
-		fmt.Printf("⚠️  Redis connection failed: %v. Using in-memory fallback.\n", err)
-		return &RedisCache{
-			client: client,
-			ctx:    ctx,
-			connected: false,
-		}, nil
-	}
+    if err := client.Ping(ctx).Err(); err != nil {
+        log.Printf("⚠️ Redis connection failed: %v. Using fallback mode.", err)
+        return &RedisCache{
+            client: client,
+            ctx:    context.Background(),
+            connected: false,
+        }, nil
+    }
 
-	fmt.Println("✅ Redis connected successfully")
-	return &RedisCache{
-		client: client,
-		ctx:    ctx,
-		connected: true,
-	}, nil
+    return &RedisCache{
+        client: client,
+        ctx:    context.Background(),
+        connected: true,
+    }, nil
 }
 
 func (r *RedisCache) Set(key string, value interface{}, expiration time.Duration) error {
